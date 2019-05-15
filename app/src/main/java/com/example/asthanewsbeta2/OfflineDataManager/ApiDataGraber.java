@@ -1,6 +1,7 @@
 package com.example.asthanewsbeta2.OfflineDataManager;
 
 import android.content.Context;
+import android.database.SQLException;
 import android.database.sqlite.SQLiteConstraintException;
 import android.util.Log;
 import android.view.View;
@@ -51,13 +52,19 @@ public class ApiDataGraber {
                                 o.getString("views"),
                                 o.getString("postcode")
                         );
-                        try {
-                            sqlHelper.addOfflinePost(Integer.parseInt(item.getId()), item.getTitle(), item.getDetails(), item.getDate(), item.getViews(), item.getPostCode());
-                        } catch (SQLiteConstraintException e) {
+
+                        if (sqlHelper.findPost(item.getId())) {
                             Log.d("SQL", "onResponse: DATA ENTRY Skip Cause of duplication!");
                             continue;
+                        } else {
+                            try {
+                                sqlHelper.addOfflinePost(Integer.parseInt(item.getId()), item.getTitle(), item.getDetails(), item.getDate(), item.getViews(), item.getPostCode());
+                            } catch (SQLException e) {
+                                Log.d("SQL", "onResponse: Something goes Wrong! " + e);
 
+                            }
                         }
+
                     }
 
                 } catch (JSONException e) {

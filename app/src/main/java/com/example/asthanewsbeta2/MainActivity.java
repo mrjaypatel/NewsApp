@@ -60,10 +60,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-
-
         SQLHelper sh = new SQLHelper(getApplicationContext());
-        sh.addOfflinePost(2,"મારુ નામ જય છે", "This is jay patel Data", "11-Apr-2019","2500","2018");
         for(String data: sh.getOfflinePost(0)){
             Log.d("HOME", "onCreate: postData index_id:"+data);
         }
@@ -75,7 +72,7 @@ public class MainActivity extends AppCompatActivity {
         }
 
 
-        //ApiDataGraber.storePostLocal(getApplicationContext(), API_URL);
+        ApiDataGraber.storePostLocal(getApplicationContext(), API_URL);
 
         shimmerFrameLayout = findViewById(R.id.placeholderPost);
 

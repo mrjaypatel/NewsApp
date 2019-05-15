@@ -5,6 +5,7 @@ import android.content.Context;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.util.Log;
 
 public class SQLHelper extends SQLiteOpenHelper {
     //Database Basic Configuration
@@ -74,9 +75,10 @@ public class SQLHelper extends SQLiteOpenHelper {
 
     public String[] getOfflinePost(int index) {
         SQLiteDatabase db = this.getReadableDatabase();
-        String[] projection = {SQLHelper.POST_ID, SQLHelper.POST_TITLE, SQLHelper.POST_DETAILS, SQLHelper.POST_DATEANDTIME, SQLHelper.POST_VIEWS, SQLHelper.POST_POSTCODE};
+        String[] projection = {SQLHelper.POST_INDEX_ID,SQLHelper.POST_ID, SQLHelper.POST_TITLE, SQLHelper.POST_DETAILS, SQLHelper.POST_DATEANDTIME, SQLHelper.POST_VIEWS, SQLHelper.POST_POSTCODE};
         Cursor cursor = db.query(SQLHelper.OFFLINE_POST, projection, null, null, null, null, null);
         String[] data = new String[countRecord(OFFLINE_POST)];
+        Log.d(TAG, "getOfflinePost: Total records: " + countRecord(OFFLINE_POST));
         if (cursor.moveToFirst()) {
             int i = 0;
             do {
@@ -88,6 +90,18 @@ public class SQLHelper extends SQLiteOpenHelper {
         return data;
     }
 
+
+    public  Boolean findPost(String postId) {
+        String sql = "SELECT  * FROM " + OFFLINE_POST + " WHERE " + POST_ID + " = " + postId;
+        SQLiteDatabase db = this.getWritableDatabase();
+        int recordCount = db.rawQuery(sql, null).getCount();
+        db.close();
+        if (recordCount == 1) {
+            return true;
+        } else {
+            return false;
+        }
+    }
 
    /* private String getLastId() {
         String selectQuery = "SELECT  * FROM " + POST_DATA + " ORDER BY " + ID + " DESC ";
