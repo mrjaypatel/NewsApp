@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".FullBlog">
+
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent">
+
+        <include
+            android:id="@+id/actionBar"
+            layout="@layout/actionbar" />
+
+        <RelativeLayout
+            android:id="@+id/fullBlogContainer"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/actionBar">
+
+            <com.facebook.shimmer.ShimmerFrameLayout
+                android:id="@+id/fullBlogPlaceholder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <include layout="@layout/single_post_placeholder" />
+            </com.facebook.shimmer.ShimmerFrameLayout>
+
+            <include
+                android:id="@+id/singlePost"
+                layout="@layout/single_post"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:visibility="gone" />
+
+
+        </RelativeLayout>
+
+        <RelativeLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@id/fullBlogContainer">
+
+            <com.facebook.shimmer.ShimmerFrameLayout
+                android:id="@+id/featurepostPlaceholder"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content">
+
+                <HorizontalScrollView
+                    android:layout_width="match_parent"
+                    android:layout_height="300dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">
+
+                        <include layout="@layout/feature_post_placeholder" />
+
+                        <include layout="@layout/feature_post_placeholder" />
+                    </LinearLayout>
+
+                </HorizontalScrollView>
+            </com.facebook.shimmer.ShimmerFrameLayout>
+
+
+            <HorizontalScrollView
+                android:id="@+id/featurePosts"
+                android:layout_width="match_parent"
+                android:layout_height="300dp"
+                android:layout_marginLeft="5dp"
+                android:layout_marginTop="20dp"
+                android:layout_marginRight="5dp"
+                android:layout_marginBottom="10dp"
+                android:visibility="gone">
+
+                <android.support.v7.widget.RecyclerView
+                    android:id="@+id/featurePost"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"></android.support.v7.widget.RecyclerView>
+
+            </HorizontalScrollView>
+
+
+        </RelativeLayout>
+
+    </RelativeLayout>
+
+</ScrollView>
