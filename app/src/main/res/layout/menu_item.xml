@@ -12,7 +12,6 @@
         android:background="@drawable/btn_bac_1"
         android:paddingLeft="10dp"
         android:paddingRight="10dp"
-        android:text="Menu Item"
         android:textAllCaps="false"
         android:textSize="18dp"
         android:textStyle="bold"

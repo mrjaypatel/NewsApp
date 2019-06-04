@@ -21,10 +21,10 @@ import java.io.IOException;
 import java.util.List;
 
 public class FeaturePostAdapter extends RecyclerView.Adapter<FeaturePostAdapter.ViewHolder> {
-    private List<GetPost> listItems;
+    private List<GetPostFromLocal> listItems;
     private Context context;
 
-    public FeaturePostAdapter(List<GetPost> listItems, Context context) {
+    public FeaturePostAdapter(List<GetPostFromLocal> listItems, Context context) {
         this.listItems = listItems;
         this.context = context;
     }
@@ -38,33 +38,17 @@ public class FeaturePostAdapter extends RecyclerView.Adapter<FeaturePostAdapter.
 
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder viewHolder, int i) {
-        final GetPost listItem = listItems.get(i);
+        final GetPostFromLocal listItem = listItems.get(i);
         final String lng = MngData.getData(context, "language", "lng");
 
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final String title,details;
-                try {
-                    title = GoogleTranslate.translate(lng,listItem.getTitle());
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            viewHolder.title.setText(title);
-                        }
-                    });
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
+        viewHolder.title.setText(listItem.getTitle());
 
-       Picasso.with(context).load(listItem.getImgUrl()).placeholder(R.drawable.ic_launcher_background).into(viewHolder.imageView);
+        Picasso.with(context).load(listItem.getImgUrl()).placeholder(R.drawable.ic_launcher_background).into(viewHolder.imageView);
 
         viewHolder.itemView.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                context.startActivity(new Intent(context, FullBlog.class).putExtra("id", listItem.getId()).putExtra("postCode",listItem.getPostCode()).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                context.startActivity(new Intent(context, FullBlog.class).putExtra("id", listItem.getId()).putExtra("postCode", listItem.getPostCode()).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
             }
         });
     }
@@ -75,12 +59,13 @@ public class FeaturePostAdapter extends RecyclerView.Adapter<FeaturePostAdapter.
     }
 
     public class ViewHolder extends RecyclerView.ViewHolder {
-       public TextView title ,details, date, views;
+        public TextView title, details, date, views;
         public ImageView imageView;
+
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
             title = itemView.findViewById(R.id.resTitle);
-            imageView =itemView.findViewById(R.id.resImg);
+            imageView = itemView.findViewById(R.id.resImg);
         }
     }
 }

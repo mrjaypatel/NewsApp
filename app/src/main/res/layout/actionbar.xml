@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="50dp"
-    android:background="@color/colorPrimary">
+    android:background="@color/colorPrimary"
+    tools:menu="@menu/languages">
 
     <TextView
         android:id="@+id/mainTitle"
@@ -19,38 +21,18 @@
         android:layout_height="wrap_content"
         android:layout_below="@+id/mainTitle"
         android:layout_centerVertical="true"
+        android:paddingLeft="5dp"
         android:text="By Humbingo Technologies"
-        android:textSize="14dp"
-        android:textStyle="italic"
         android:textColor="@color/gray"
-        android:paddingLeft="5dp"/>
-
-
-    <Button
-        android:id="@+id/guj"
-        android:layout_width="50dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_centerVertical="true"
-        android:layout_marginRight="100dp"
-
-        android:text="GJ" />
+        android:textSize="14dp"
+        android:textStyle="italic" />
 
     <Button
-        android:id="@+id/en"
-        android:layout_width="50dp"
-        android:layout_height="wrap_content"
+        android:id="@+id/languageMenu"
+        android:layout_width="40dp"
+        android:layout_height="40dp"
         android:layout_alignParentRight="true"
-        android:layout_centerVertical="true"
-        android:layout_marginRight="50dp"
-        android:text="EN" />
-
-    <Button
-        android:id="@+id/hi"
-        android:layout_width="50dp"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"
-        android:layout_centerVertical="true"
-        android:text="HI" />
+        android:background="@drawable/menu_icon"
+        android:layout_centerVertical="true"/>
 
 </RelativeLayout>

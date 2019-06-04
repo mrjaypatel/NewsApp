@@ -22,18 +22,16 @@ import com.android.volley.toolbox.StringRequest;
 import com.android.volley.toolbox.Volley;
 import com.example.asthanewsbeta2.Modules.FeaturePostAdapter;
 import com.example.asthanewsbeta2.Modules.GetPost;
+import com.example.asthanewsbeta2.Modules.GetPostFromLocal;
+import com.example.asthanewsbeta2.Modules.MainFeedAdapter;
 import com.example.asthanewsbeta2.Modules.MngData;
+import com.example.asthanewsbeta2.OfflineDataManager.SQLHelper;
 import com.example.asthanewsbeta2.Services.CacheRequest;
 import com.example.asthanewsbeta2.Services.GoogleTranslate;
-import com.example.asthanewsbeta2.Services.GsonRequest;
 import com.example.asthanewsbeta2.Services.WebServiceProvider;
 import com.facebook.shimmer.ShimmerFrameLayout;
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.reflect.TypeToken;
 import com.squareup.picasso.Callback;
 import com.squareup.picasso.NetworkPolicy;
-import com.squareup.picasso.OkHttpDownloader;
 import com.squareup.picasso.Picasso;
 
 import org.json.JSONArray;
@@ -42,9 +40,7 @@ import org.json.JSONObject;
 
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.lang.reflect.Type;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 public class FullBlog extends AppCompatActivity {
@@ -52,7 +48,7 @@ public class FullBlog extends AppCompatActivity {
     private ImageView postImage;
     private GestureDetector gd;
     private RecyclerView featurePost;
-    private List<GetPost> postData;
+    private List<GetPostFromLocal> postData;
 
     private ShimmerFrameLayout fullBlogPlace;
     private ShimmerFrameLayout featurePostPlace;
@@ -69,7 +65,6 @@ public class FullBlog extends AppCompatActivity {
         setContentView(R.layout.activity_full_blog);
 
 
-
         fullBlogPlace = findViewById(R.id.fullBlogPlaceholder);
         featurePostPlace = findViewById(R.id.featurepostPlaceholder);
 
@@ -82,200 +77,67 @@ public class FullBlog extends AppCompatActivity {
         featurePost.setHasFixedSize(true);
         featurePost.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
 
-        loadSinglePost(API);
-        //loadSinglePostUD(API);
+        //loadSinglePost(API);
+        String lng = MngData.getData(getApplicationContext(),"language", "lng");
 
-        loadFeaturePost(FPOST_API);
+        //Load Offline Post From SQLITE
+        loadPost(Integer.parseInt(id),lng);
 
-    }
-
-
-    private void loadSinglePost(String API) {
-        StringRequest request = new StringRequest(Request.Method.GET,
-                API, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-
-                try {
-                    JSONObject jo = new JSONObject(response);
-                    JSONArray array = jo.getJSONArray("mainfeed");
-                    for (int i = 0; i < array.length(); i++) {
-                        final JSONObject o = array.getJSONObject(i);
-
-                        //                          o.getString("id");
-                        final String title = o.getString("title");
-                        final String imgUrl = o.getString("imgUrl");
-                        final String details = o.getString("details");
-
-                        final String lng = MngData.getData(getApplicationContext(), "language", "lng");
-                        new Thread(new Runnable() {
-                            @Override
-                            public void run() {
-                                final String fTitle, fDetails;
-                                try {
-                                    fTitle = GoogleTranslate.translate(lng, title);
-                                    fDetails = GoogleTranslate.translate(lng, details);
-
-                                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                        @Override
-                                        public void run() {
-
-                                            postTitle.setText(fTitle);
-                                            postDetails.setText(fDetails);
-                                            fullBlogPlace.setVisibility(View.GONE);
-                                            Picasso.with(getApplicationContext()).load(imgUrl).networkPolicy(NetworkPolicy.OFFLINE).placeholder(R.drawable.ic_launcher_background).error(R.drawable.ic_launcher_foreground).into(postImage, new Callback() {
-                                                @Override
-                                                public void onSuccess() {
-                                                    Log.d("OUTPOT", "onSuccess: +++++++++++++ Image is offline Loaded");
-                                                }
-
-                                                @Override
-                                                public void onError() {
-                                                    Log.d("OUTPOT", "onSuccess: +++++++++++++ Image From Online API");
-                                                    Picasso.with(getApplicationContext()).load(imgUrl).placeholder(R.drawable.ic_launcher_background).into(postImage);
-                                                }
-                                            });
-
-                                            View fullBlog = findViewById(R.id.singlePost);
-                                            fullBlog.setVisibility(View.VISIBLE);
-
-                                            Log.d("OUTPOT", "run: +_+++++++++++++++++++++++:Title " + fTitle);
-                                            Log.d("OUTPOT", "run: +_+++++++++++++++++++++++:Details " + fDetails);
-                                        }
-                                    });
-                                } catch (IOException e) {
-                                    e.printStackTrace();
-                                }
-                            }
-                        }).start();
+        //Load Offline Feature Post From SQLITE
+        loadOfflineFeaturePost();
 
 
-
-                        /*o.getString("date");
-                        o.getString("views");
-                        o.getString("postcode");*/
-
-
-                    }
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        }
-        );
-
-        RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
-        queue.add(request);
-
+        //loadFeaturePost(FPOST_API);
 
     }
 
+    private void loadPost(int id,String lng) {
+        SQLHelper sh = new SQLHelper(getApplicationContext());
+        String title = sh.getCellByPostId(2, id, lng);
+        String details = sh.getCellByPostId(4, id, lng);
+        final String imgUrl = sh.getCellByPostId(3,id, lng);
+        //String data = MngData.mngString(getApplicationContext(), details);
 
-    private void loadSinglePostUD(String API) {
-        CacheRequest cacheRequest1 = new CacheRequest(0, API, new Response.Listener<NetworkResponse>() {
+        postTitle.setText(title);
+        postDetails.setText(details);
+        fullBlogPlace.setVisibility(View.GONE);
+        Picasso.with(getApplicationContext()).load(imgUrl).networkPolicy(NetworkPolicy.OFFLINE).placeholder(R.drawable.ic_launcher_background).error(R.drawable.ic_launcher_foreground).into(postImage, new Callback() {
             @Override
-            public void onResponse(NetworkResponse response) {
-                try {
-                    final String jsonString = new String(response.data,
-                            HttpHeaderParser.parseCharset(response.headers));
-                    try {
-                        JSONObject jo = new JSONObject(jsonString);
-                        Log.d("OUTPOT", "run: +_+++++++++++++++++++++++:Offline API response " + jo);
-                        JSONArray array = jo.getJSONArray("mainfeed");
-                        for (int i = 0; i < array.length(); i++) {
-                            final JSONObject o = array.getJSONObject(i);
-                            GetPost dataList = new GetPost(
-                                    o.getString("id"),
-                                    o.getString("title"),
-                                    o.getString("imgUrl"),
-                                    o.getString("details"),
-                                    o.getString("date"),
-                                    o.getString("views"),
-                                    o.getString("postcode")
-                            );
-
-
-                            final String title = dataList.getTitle();
-                            final String imgUrl = dataList.getImgUrl();
-                            final String details = dataList.getDetails();
-
-                            final String lng = MngData.getData(getApplicationContext(), "language", "lng");
-                            Log.d("OUTPOT", "run: +_+++++++++++++++++++++++:Image Url " + imgUrl);
-
-
-                            Picasso.with(getApplicationContext()).load(imgUrl).networkPolicy(NetworkPolicy.OFFLINE).placeholder(R.drawable.ic_launcher_background).error(R.drawable.ic_launcher_foreground).into(postImage, new Callback() {
-                                @Override
-                                public void onSuccess() {
-                                    Log.d("OUTPOT", "onSuccess: +++++++++++++ Image is offline Loaded");
-                                }
-
-                                @Override
-                                public void onError() {
-                                    Log.d("OUTPOT", "onSuccess: +++++++++++++ Image From Online API");
-                                    Picasso.with(getApplicationContext()).load(imgUrl).placeholder(R.drawable.ic_launcher_background).into(postImage);
-                                }
-                            });
-
-
-                            new Thread(new Runnable() {
-                                @Override
-                                public void run() {
-                                    final String fTitle, fDetails;
-                                    try {
-                                        fTitle = GoogleTranslate.translate(lng, title);
-                                        fDetails = GoogleTranslate.translate(lng, details);
-                                        new Handler(Looper.getMainLooper()).post(new Runnable() {
-                                            @Override
-                                            public void run() {
-
-                                                postTitle.setText(fTitle);
-                                                postDetails.setText(fDetails);
-                                                fullBlogPlace.setVisibility(View.GONE);
-                                                View fullBlog = findViewById(R.id.singlePost);
-                                                fullBlog.setVisibility(View.VISIBLE);
-
-                                                Log.d("OUTPOT", "run: +_+++++++++++++++++++++++:Title " + fTitle);
-                                                Log.d("OUTPOT", "run: +_+++++++++++++++++++++++:Details " + fDetails);
-                                            }
-                                        });
-                                    } catch (IOException e) {
-                                        e.printStackTrace();
-                                    }
-                                }
-                            }).start();
-
-
-                        }
-
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-
-
-                } catch (UnsupportedEncodingException e) {
-                    e.printStackTrace();
-                }
+            public void onSuccess() {
+                Log.d("OUTPOT", "onSuccess: +++++++++++++ Image is offline Loaded");
             }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
 
+            @Override
+            public void onError() {
+                Log.d("OUTPOT", "onSuccess: +++++++++++++ Image From Online API");
+                Picasso.with(getApplicationContext()).load(imgUrl).placeholder(R.drawable.ic_launcher_background).into(postImage);
             }
         });
-
-        WebServiceProvider.getInstace(getApplicationContext()).addToRequestQueue(cacheRequest1);
+        View fullBlog = findViewById(R.id.singlePost);
+        fullBlog.setVisibility(View.VISIBLE);
     }
 
 
-    private void loadFeaturePost(final String fpost_api) {
+    private void loadOfflineFeaturePost() {
         postData = new ArrayList<>();
+        SQLHelper sh = new SQLHelper(getApplicationContext());
+        String lng = MngData.getData(getApplicationContext(), "language", "lng");
+        String postCode = MngData.getData(getApplicationContext(), "postCode", "code");
+        postData = sh.getOffPostList(postCode, lng);
+
+        FeaturePostAdapter fp = new FeaturePostAdapter(postData, getApplicationContext());
+        featurePost.setAdapter(fp);
+
+        featurePostPlace.setVisibility(View.GONE);
+        View featurePost = findViewById(R.id.featurePosts);
+        featurePost.setVisibility(View.VISIBLE);
+    }
+
+
+/*
+
+    private void loadFeaturePost(final String fpost_api) {
+        final List<GetPost> postData = new ArrayList<>();
         CacheRequest cacheRequest = new CacheRequest(0, fpost_api, new Response.Listener<NetworkResponse>() {
             @Override
             public void onResponse(NetworkResponse response) {
@@ -325,6 +187,7 @@ public class FullBlog extends AppCompatActivity {
 
 
     }
+*/
 
 
     @Override

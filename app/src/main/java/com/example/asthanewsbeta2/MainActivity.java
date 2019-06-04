@@ -1,128 +1,68 @@
 package com.example.asthanewsbeta2;
 
-import android.app.ProgressDialog;
 import android.content.Intent;
-import android.database.Cursor;
-import android.database.sqlite.SQLiteDatabase;
-import android.support.v4.app.FragmentTransaction;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
+import android.support.v7.widget.PopupMenu;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
-import android.widget.TextView;
 
-import com.android.volley.NetworkResponse;
 import com.android.volley.Request;
-import com.android.volley.RequestQueue;
 import com.android.volley.Response;
 import com.android.volley.VolleyError;
-import com.android.volley.toolbox.HttpHeaderParser;
 import com.android.volley.toolbox.StringRequest;
-import com.android.volley.toolbox.Volley;
-import com.example.asthanewsbeta2.Modules.FeaturePostAdapter;
+import com.example.asthanewsbeta2.DataManager.ApiDataGrabber;
 import com.example.asthanewsbeta2.Modules.GetMenu;
-import com.example.asthanewsbeta2.Modules.GetPost;
+import com.example.asthanewsbeta2.Modules.GetPostFromLocal;
 import com.example.asthanewsbeta2.Modules.MainFeedAdapter;
 import com.example.asthanewsbeta2.Modules.MenuItemAdapter;
 import com.example.asthanewsbeta2.Modules.MngData;
-import com.example.asthanewsbeta2.OfflineDataManager.ApiDataGraber;
-import com.example.asthanewsbeta2.Services.CacheRequest;
-import com.example.asthanewsbeta2.Services.SQLHelper;
+import com.example.asthanewsbeta2.OfflineDataManager.SQLHelper;
+import com.example.asthanewsbeta2.DataManager.FileControl;
 import com.example.asthanewsbeta2.Services.UpdateStrings;
 import com.example.asthanewsbeta2.Services.WebServiceProvider;
 import com.facebook.shimmer.ShimmerFrameLayout;
 
 
-import android.widget.Toast;
-
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuItemClickListener {
     private RecyclerView menuItems;
     private List<GetMenu> menuItemData;
-    private List<GetPost> postData;
-    private RecyclerView mainFeed;
+    private List<GetPostFromLocal> postData;
+    private List<GetMenu> menuData;
+    public RecyclerView mainFeed;
 
     private ShimmerFrameLayout shimmerFrameLayout;
 
-    public static String API_URL = "http://durgaplacements.com/Api/mainFeedApi.php?key=madHash456@@&postCode=1";
+    public static String POST_API = "http://durgaplacements.com/Api/mainFeedApi.php?key=madHash456@@&postCode=1";
+    public static String MENU_API = "http://durgaplacements.com/Api/MenuItems.php?key=madHash456@@";
+    public static String ALLPOST_API = "http://durgaplacements.com/Api/allPost.php?key=madHash456@@";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        SQLHelper sh = new SQLHelper(getApplicationContext());
-        for(String data: sh.getOfflinePost(0)){
-            Log.d("HOME", "onCreate: postData index_id:"+data);
-        }
-        for(String data: sh.getOfflinePost(1)){
-            Log.d("HOME", "onCreate: postData id:"+data);
-        }
-        for(String data: sh.getOfflinePost(2)){
-            Log.d("HOME", "onCreate: postData title:"+data);
-        }
+        SQLHelper sqlHelper = new SQLHelper(getApplicationContext());
+       /* sqlHelper.emptyTable("OFFLINE_POST");
+        sqlHelper.emptyTable("OFFLINE_MENU");*/
+
+        //Check Post code and language if not seted for start
+        checkPostConfig();
 
 
-        ApiDataGraber.storePostLocal(getApplicationContext(), API_URL);
-
+        //Facebook preload for application main feed!
         shimmerFrameLayout = findViewById(R.id.placeholderPost);
-
-
-        mainFeed = findViewById(R.id.mainFeed);
-        mainFeed.setHasFixedSize(true);
-        mainFeed.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
-
-        postData = new ArrayList<>();
-        //  String API_CODE = API_URL+"&postCode="+ MngData.getData(getActivity(),"postCode","code");
-        Log.d("Humbingo", "onCreateView: Api String Request: " + API_URL);
-
-
-        //loadPost(API_URL);
-        loadCachePost(API_URL);
-
-
-        //final Intent updateService = new Intent(getApplicationContext(), UpdateStrings.class);
-        //startService(updateService);
-
-
-        Button guj = findViewById(R.id.guj);
-        Button en = findViewById(R.id.en);
-        Button hi = findViewById(R.id.hi);
-
-
-        guj.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MngData.setData(getApplicationContext(), "language", "lng", "gu");
-                startActivity(new Intent(getApplicationContext(), MainActivity.class));
-            }
-        });
-
-        en.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MngData.setData(getApplicationContext(), "language", "lng", "en");
-                startActivity(new Intent(getApplicationContext(), MainActivity.class));
-            }
-        });
-
-
-        hi.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                MngData.setData(getApplicationContext(), "language", "lng", "hi");
-                startActivity(new Intent(getApplicationContext(), MainActivity.class));
-            }
-        });
 
 
         //Menu Item Setup RecyclerView
@@ -130,12 +70,93 @@ public class MainActivity extends AppCompatActivity {
         menuItems.setHasFixedSize(true);
         menuItems.setLayoutManager(new LinearLayoutManager(MainActivity.this, LinearLayoutManager.HORIZONTAL, false));
         menuItemData = new ArrayList<>();
+        //Loads Menu Items From The Web API
+        loadOfflineMenu();
 
-        loadData("http://durgaplacements.com/Api/MenuItems.php?key=madHash456@@");
+        //Mainfeed recycler View Handler
+        mainFeed = findViewById(R.id.mainFeed);
+        mainFeed.setHasFixedSize(true);
+        mainFeed.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
 
-        String data = MngData.mngString(getApplicationContext(), "Jay. Vijay. Ram. Rahim.");
-        Toast.makeText(getApplicationContext(), data, Toast.LENGTH_LONG).show();
-        Log.d("OUTPUT", "onCreate:+++++++++++++++++++++++++ " + data);
+        //Loading Offline Post from SQLITE database
+        loadOfflinePost();
+
+
+        final Intent updateService = new Intent(getApplicationContext(), UpdateStrings.class);
+        startService(updateService);
+
+
+        //Actionbar language Menu btn
+        Button menuLng = findViewById(R.id.languageMenu);
+        menuLng.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                showMenu(v);
+            }
+        });
+
+
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                FileControl fc = new FileControl();
+                String FEEDAPI = "http://durgaplacements.com/Api/feed.php?key=madHash456@@&postCode=1";
+               List<String> test =new ArrayList<>();
+               test = ApiDataGrabber.getFeedFromFile(getApplicationContext(),FEEDAPI,"gu");
+                Log.d("MYFILE", "In to Thread File 1! " );
+                int size = test.size();
+                Log.d("MYFILE", "List Item Count Set: "+size);
+
+                String tmpTitle =MngData.getData(getApplicationContext(),"tmpString","title");
+                String tmpDetails=MngData.getData(getApplicationContext(),"tmpString","details");
+                try {
+                    Thread.sleep(500);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+
+                if(tmpTitle.equals("1")){
+                    ApiDataGrabber.getFeedFromFile(getApplicationContext(),FEEDAPI,"gu");
+                    Log.d("FileControl", "INto Tmp Title!");
+                }else{
+                    String title = fc.getFileFromUrl(tmpTitle);
+                    Log.d("FileControl", "onCreate: Temp Title Success: " + tmpTitle + "\n"+title);
+
+                }
+
+
+
+                if(tmpDetails.equals("1")){
+                    ApiDataGrabber.getFeedFromFile(getApplicationContext(),FEEDAPI,"gu");
+                    Log.d("FileControl", "INto Tmp Details!");
+                }else{
+                    String details = fc.getFileFromUrl(tmpDetails);
+                    Log.d("FileControl", "onCreate: Temp Details Success: " + tmpDetails+"\n "+ details);
+
+
+                }
+
+                MngData.setData(getApplicationContext(),"tmpString","title","1");
+                MngData.setData(getApplicationContext(),"tmpString","details","1");
+
+
+/*                String data = fc.getFileFromUrl("http://durgaplacements.com/Data/2019/6/3/1/gu/details.txt");
+                Log.d("FileControl", "onCreate: data from web: " + data);*/
+            }
+        }).start();
+
+
+    }
+
+    private void checkPostConfig() {
+        String postCode = MngData.getData(getApplicationContext(), "postCode", "code");
+        String lng = MngData.getData(getApplicationContext(), "language", "lng");
+        if (lng.equals("1")) {
+            MngData.setData(getApplicationContext(), "language", "lng", "en");
+        }
+
+        Log.d("HUMBINGO", "checkPostConfig: POSTCODE: " + postCode);
+        Log.d("HUMBINGO", "checkPostConfig: LANGUAGE: " + lng);
 
     }
 
@@ -152,55 +173,83 @@ public class MainActivity extends AppCompatActivity {
         shimmerFrameLayout.stopShimmer();
     }
 
-    private void loadPost(String apiUrl) {
-        StringRequest request = new StringRequest(Request.Method.GET,
-                apiUrl, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
 
-                try {
-                    JSONObject jo = new JSONObject(response);
-                    JSONArray array = jo.getJSONArray("mainfeed");
-                    for (int i = 0; i < array.length(); i++) {
-                        JSONObject o = array.getJSONObject(i);
-                        GetPost item = new GetPost(
-                                o.getString("id"),
-                                o.getString("title"),
-                                o.getString("imgUrl"),
-                                o.getString("details"),
-                                o.getString("date"),
-                                o.getString("views"),
-                                o.getString("postcode")
-                        );
-                        postData.add(item);
-                    }
-                    MainFeedAdapter feedAdapter = new MainFeedAdapter(postData, getApplicationContext());
-                    mainFeed.setAdapter(feedAdapter);
-                    shimmerFrameLayout.setVisibility(View.GONE);
-                    mainFeed.setVisibility(View.VISIBLE);
-
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        }
-        );
-
-        RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
-        queue.add(request);
+    /**
+     * Below is menu items code
+     */
+    public void showPopup(View v) {
+        PopupMenu popup = new PopupMenu(this, v);
+        MenuInflater inflater = popup.getMenuInflater();
+        inflater.inflate(R.menu.languages, popup.getMenu());
+        popup.show();
     }
 
+    public void showMenu(View v) {
+        PopupMenu popup = new PopupMenu(this, v);
 
-    private void loadData(String API) {
-        StringRequest request = new StringRequest(Request.Method.GET,
-                API, new Response.Listener<String>() {
+        // This activity implements OnMenuItemClickListener
+        popup.setOnMenuItemClickListener(this);
+        popup.inflate(R.menu.languages);
+        popup.show();
+    }
+
+    @Override
+    public boolean onMenuItemClick(MenuItem menuItem) {
+        switch (menuItem.getItemId()) {
+            case R.id.guj:
+                MngData.setData(getApplicationContext(), "language", "lng", "gu");
+                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                return true;
+            case R.id.eng:
+                MngData.setData(getApplicationContext(), "language", "lng", "en");
+                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                return true;
+            case R.id.hin:
+                MngData.setData(getApplicationContext(), "language", "lng", "hi");
+                startActivity(new Intent(getApplicationContext(), MainActivity.class));
+                return true;
+            default:
+                return super.onOptionsItemSelected(menuItem);
+        }
+    }
+
+//Custom Actionbar Menu Ends
+
+
+    private void loadOfflinePost() {
+        SQLHelper sh = new SQLHelper(getApplicationContext());
+        String lng = MngData.getDataDefault(getApplicationContext(), "language", "lng", "en");
+        Log.d("HUMBINGO", "loadOfflinePost: OFFLINE POST LANGUAGE: " + lng);
+        String postCode = MngData.getData(getApplicationContext(), "postCode", "code");
+        if (sh.countRecord("OFFLINE_POST") <= 0) {
+            loadOnlinePost();
+        } else {
+            postData = new ArrayList<>();
+            postData = sh.getOffPostList(postCode, lng);
+            MainFeedAdapter feedAdapter = new MainFeedAdapter(postData, getApplicationContext());
+            mainFeed.setAdapter(feedAdapter);
+            shimmerFrameLayout.setVisibility(View.GONE);
+            mainFeed.setVisibility(View.VISIBLE);
+        }
+    }
+
+    private void loadOfflineMenu() {
+        menuData = new ArrayList<>();
+        SQLHelper sh = new SQLHelper(getApplicationContext());
+        String lng = MngData.getData(getApplicationContext(), "language", "lng");
+        if (sh.countRecord("OFFLINE_MENU") <= 0) {
+            loadOnlineMenu();
+        } else {
+            menuData = sh.getOffMenuList(lng);
+            MenuItemAdapter menuItemAdapter = new MenuItemAdapter(menuData, getApplicationContext());
+            menuItems.setAdapter(menuItemAdapter);
+        }
+
+    }
+
+    private void loadOnlineMenu() {
+        final List<GetMenu> menuList = new ArrayList<>();
+        StringRequest stringRequest1 = new StringRequest(Request.Method.GET, MENU_API, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
 
@@ -209,70 +258,20 @@ public class MainActivity extends AppCompatActivity {
                     JSONArray array = jo.getJSONArray("menuitems");
                     for (int i = 0; i < array.length(); i++) {
                         JSONObject o = array.getJSONObject(i);
-                        GetMenu item = new GetMenu(
+                        final GetMenu item = new GetMenu(
                                 o.getString("id"),
                                 o.getString("title"),
                                 o.getString("cat")
                         );
-                        menuItemData.add(item);
+                        menuList.add(item);
                     }
-                    MenuItemAdapter menuItemAdapter = new MenuItemAdapter(menuItemData, getApplicationContext());
+
+                    menuData = menuList;
+                    MenuItemAdapter menuItemAdapter = new MenuItemAdapter(menuData, getApplicationContext());
                     menuItems.setAdapter(menuItemAdapter);
 
 
                 } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        }
-        );
-
-        RequestQueue queue = Volley.newRequestQueue(getApplicationContext());
-        queue.add(request);
-    }
-
-
-    private void loadCachePost(final String fpost_api) {
-        postData = new ArrayList<>();
-        CacheRequest cacheRequest = new CacheRequest(0, fpost_api, new Response.Listener<NetworkResponse>() {
-            @Override
-            public void onResponse(NetworkResponse response) {
-                try {
-                    final String jsonString = new String(response.data,
-                            HttpHeaderParser.parseCharset(response.headers));
-                    try {
-                        JSONObject jo = new JSONObject(jsonString);
-                        JSONArray array = jo.getJSONArray("mainfeed");
-                        for (int i = 0; i < array.length(); i++) {
-                            JSONObject o = array.getJSONObject(i);
-                            GetPost item = new GetPost(
-                                    o.getString("id"),
-                                    o.getString("title"),
-                                    o.getString("imgUrl"),
-                                    o.getString("details"),
-                                    o.getString("date"),
-                                    o.getString("views"),
-                                    o.getString("postcode")
-                            );
-                            postData.add(item);
-                        }
-                        MainFeedAdapter feedAdapter = new MainFeedAdapter(postData, getApplicationContext());
-                        mainFeed.setAdapter(feedAdapter);
-                        shimmerFrameLayout.setVisibility(View.GONE);
-                        mainFeed.setVisibility(View.VISIBLE);
-
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-
-
-                } catch (UnsupportedEncodingException e) {
                     e.printStackTrace();
                 }
             }
@@ -282,11 +281,53 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+        WebServiceProvider.getInstace(getApplicationContext()).addToRequestQueue(stringRequest1);
+    }
 
-        WebServiceProvider.getInstace(getApplicationContext()).addToRequestQueue(cacheRequest);
+    private void loadOnlinePost() {
+        final List<GetPostFromLocal> postList = new ArrayList<>();
+        StringRequest stringRequest = new StringRequest(Request.Method.GET, POST_API, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
 
+                    JSONObject jo = new JSONObject(response);
+                    JSONArray array = jo.getJSONArray("mainfeed");
+                    for (int i = 0; i < array.length(); i++) {
+                        JSONObject o = array.getJSONObject(i);
+                        final GetPostFromLocal item = new GetPostFromLocal(
+                                o.getString("id"),
+                                o.getString("title"),
+                                o.getString("imgUrl"),
+                                o.getString("details"),
+                                o.getString("date"),
+                                o.getString("views"),
+                                o.getString("postcode"),
+                                "en"
+                        );
+                        postList.add(item);
+                    }
+                    List<GetPostFromLocal> olPost = postList;
+                    MainFeedAdapter feedAdapter = new MainFeedAdapter(olPost, getApplicationContext());
+                    mainFeed.setAdapter(feedAdapter);
+                    shimmerFrameLayout.setVisibility(View.GONE);
+                    mainFeed.setVisibility(View.VISIBLE);
+
+
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+
+            }
+        });
+        WebServiceProvider.getInstace(getApplicationContext()).addToRequestQueue(stringRequest);
 
     }
 
 
+//Class End
 }

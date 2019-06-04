@@ -6,6 +6,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.support.annotation.NonNull;
 import android.support.v7.widget.RecyclerView;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
@@ -37,34 +38,15 @@ public class MenuItemAdapter extends RecyclerView.Adapter<MenuItemAdapter.ViewHo
     @Override
     public void onBindViewHolder(@NonNull final ViewHolder viewHolder, int i) {
         final GetMenu listItem = listItems.get(i);
-        final String lng = MngData.getData(context, "language", "lng");
-
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final String title;
-                try {
-                    title = GoogleTranslate.translate(lng, listItem.getTitle());
-
-                    new Handler(Looper.getMainLooper()).post(new Runnable() {
-                        @Override
-                        public void run() {
-                            viewHolder.menuBtn.setText(title);
-                        }
-                    });
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-        }).start();
-
+        viewHolder.menuBtn.setText(listItem.getTitle());
         viewHolder.menuBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
 
                 String cat = listItem.getCat();
-                MainActivity.API_URL = "http://durgaplacements.com/Api/mainFeedApi.php?key=madHash456@@&postCode=" + cat;
+                MngData.setData(context, "postCode", "code", cat);
+                MainActivity.POST_API = "http://durgaplacements.com/Api/mainFeedApi.php?key=madHash456@@&postCode=" + cat;
+                Log.d("CAT", "onClick: Cat" + listItem.getCat());
                 context.startActivity(new Intent(context, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
 
             }

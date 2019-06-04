@@ -1,6 +1,6 @@
 package com.example.asthanewsbeta2.Modules;
 
-public class GetPost {
+public class GetPostFromLocal {
     private String id;
     private String title;
     private String imgUrl;
@@ -10,17 +10,7 @@ public class GetPost {
     private String postCode;
     private String lng;
 
-    public GetPost(String id, String title, String imgUrl, String details, String date, String views, String postCode) {
-        this.id = id;
-        this.title = title;
-        this.imgUrl = imgUrl;
-        this.details = details;
-        this.date = date;
-        this.views = views;
-        this.postCode = postCode;
-    }
-
-    public GetPost(String id, String title, String imgUrl, String details, String date, String views, String postCode, String lng) {
+    public GetPostFromLocal(String id, String title, String imgUrl, String details, String date, String views, String postCode, String lng) {
         this.id = id;
         this.title = title;
         this.imgUrl = imgUrl;
@@ -29,9 +19,6 @@ public class GetPost {
         this.views = views;
         this.postCode = postCode;
         this.lng = lng;
-    }
-
-    public GetPost() {
     }
 
     public String getId() {

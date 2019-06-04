@@ -14,8 +14,8 @@
             android:id="@+id/postImg"
             android:layout_width="match_parent"
             android:layout_height="200dp"
-            android:background="@color/gray"
-            android:scaleType="centerCrop"
+            android:background="@drawable/placeholder_rec"
+            android:scaleType="fitXY"
             />
 
         <TextView

@@ -18,9 +18,8 @@
             android:id="@+id/resImg"
             android:layout_width="match_parent"
             android:layout_height="200dp"
-            android:background="@color/gray"
-            android:scaleType="fitXY"
-            android:src="@drawable/ic_launcher_background" />
+            android:background="@drawable/placeholder_squre"
+            android:scaleType="fitXY" />
 
         <TextView
             android:id="@+id/resTitle"
