@@ -17,6 +17,16 @@ public class MyGlobal extends Application {
     }
 
 
+    private String checkFeedCount;
+
+    public String getCheckFeedCount() {
+        return checkFeedCount;
+    }
+
+    public void setCheckFeedCount(String checkFeedCount) {
+        this.checkFeedCount = checkFeedCount;
+    }
+
     //For setting total menu count for ApiGrabber
     private String checkMenuCount;
     public String getCheckMenuCount() {
@@ -83,26 +93,5 @@ public class MyGlobal extends Application {
     }
 
 
-    public MyGlobal() {
-    }
 
-    public MyGlobal(String myTitle, String myDetails) {
-        this.myTitle = myTitle;
-        this.myDetails = myDetails;
-    }
-
-
-    private List<String> dataList = new ArrayList<>();
-
-    public List<String> getDataList() {
-        return dataList;
-    }
-
-    public void setDataList(List<String> dataList) {
-        this.dataList = dataList;
-    }
-
-    public MyGlobal(List<String> dataList) {
-        this.dataList = dataList;
-    }
 }

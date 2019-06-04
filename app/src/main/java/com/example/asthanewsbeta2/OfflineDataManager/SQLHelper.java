@@ -226,17 +226,26 @@ public class SQLHelper extends SQLiteOpenHelper {
         String sql = "SELECT  * FROM " + OFFLINE_POST + " WHERE " + POST_ID + " = " + postId + " AND " + POST_LNG + " = \"" + postLng + "\"";
         SQLiteDatabase db = this.getWritableDatabase();
         int recordCount = db.rawQuery(sql, null).getCount();
-        Log.d(TAG, "findPost: " + countRecord("OFFLINE_POST"));
-        return recordCount == 1;
+        Log.d("apiGrabber", "findPost: " + recordCount);
+        if (recordCount > 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
 
     //This method can find same post is exsist or not into the database
-    public Boolean findMenu(String menuId, String menuLng) {
-        String sql = "SELECT  * FROM " + OFFLINE_MENU + " WHERE " + MENU_ID + " = " + menuId + " AND " + MENU_LNG + " = \"" + menuLng + "\"";
+    public Boolean findMenu(String menuId) {
+        String sql = "SELECT  * FROM " + OFFLINE_MENU + " WHERE " + MENU_ID + " = " + menuId + " AND " + MENU_LNG + " = \"gu\"";
         SQLiteDatabase db = this.getWritableDatabase();
         int recordCount = db.rawQuery(sql, null).getCount();
-        return recordCount == 1;
+        Log.d("apiGrabber", "SQLHELPER findMenu: menu count in slite: "+ recordCount);
+        if (recordCount > 0) {
+            return true;
+        } else {
+            return false;
+        }
     }
 
     //For cleaning up table data
@@ -340,5 +349,41 @@ public class SQLHelper extends SQLiteOpenHelper {
         return data;
     }
 
+    //For getting all record by col_index
+    public List<String> getCellMenu(int index) {
+        List<String> MenuData = new ArrayList<>();
+        String selectQuery = "SELECT  * FROM " + OFFLINE_MENU;
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+        String data = "";
+        if (cursor.moveToFirst()) {
+            do {
+                data = cursor.getString(index);
+                MenuData.add(data);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return MenuData;
+    }
 
+    //For getting all record by col_index
+    /*public void removeDuplicate(int id,String TABLENAME) {
+
+        String selectQuery = "INSERT INTO "+TABLENAME+" (ip, hits)"+" VALUES ('127.0.0.1', 1)"+
+        " ON CONFLICT(ip) DO UPDATE SET "+ hits +" =" +;
+
+
+
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+        String data = "";
+        if (cursor.moveToFirst()) {
+            do {
+                data = cursor.getString(index);
+                MenuData.add(data);
+            } while (cursor.moveToNext());
+        }
+        cursor.close();
+        return MenuData;
+    }*/
 }

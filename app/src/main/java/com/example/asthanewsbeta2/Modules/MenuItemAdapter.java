@@ -42,10 +42,8 @@ public class MenuItemAdapter extends RecyclerView.Adapter<MenuItemAdapter.ViewHo
         viewHolder.menuBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-
                 String cat = listItem.getCat();
                 MngData.setData(context, "postCode", "code", cat);
-                MainActivity.POST_API = "http://durgaplacements.com/Api/mainFeedApi.php?key=madHash456@@&postCode=" + cat;
                 Log.d("CAT", "onClick: Cat" + listItem.getCat());
                 context.startActivity(new Intent(context, MainActivity.class).setFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
 

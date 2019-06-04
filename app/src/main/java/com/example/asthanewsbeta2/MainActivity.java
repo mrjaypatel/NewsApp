@@ -1,5 +1,6 @@
 package com.example.asthanewsbeta2;
 
+import android.app.ProgressDialog;
 import android.content.Intent;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -11,6 +12,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
+import android.widget.ProgressBar;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -23,7 +25,6 @@ import com.example.asthanewsbeta2.Modules.MainFeedAdapter;
 import com.example.asthanewsbeta2.Modules.MenuItemAdapter;
 import com.example.asthanewsbeta2.Modules.MngData;
 import com.example.asthanewsbeta2.OfflineDataManager.SQLHelper;
-import com.example.asthanewsbeta2.DataManager.FileControl;
 import com.example.asthanewsbeta2.Services.UpdateStrings;
 import com.example.asthanewsbeta2.Services.WebServiceProvider;
 import com.facebook.shimmer.ShimmerFrameLayout;
@@ -49,17 +50,24 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     public static String MENU_API = "http://durgaplacements.com/Api/MenuItems.php?key=madHash456@@";
     public static String ALLPOST_API = "http://durgaplacements.com/Api/allPost.php?key=madHash456@@";
 
+    private ProgressBar spinner;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+
+
         setContentView(R.layout.activity_main);
         SQLHelper sqlHelper = new SQLHelper(getApplicationContext());
-       /* sqlHelper.emptyTable("OFFLINE_POST");
-        sqlHelper.emptyTable("OFFLINE_MENU");*/
 
-        //Check Post code and language if not seted for start
+        spinner = (ProgressBar) findViewById(R.id.progressBar1);
+        spinner.setVisibility(View.VISIBLE);
+        //Check Post code and language if not seted for st sqlHelper.emptyTable("OFFLINE_POST");
+        //        sqlHelper.emptyTable("OFFLINE_MENU");art
         checkPostConfig();
-
+        final Intent updateService = new Intent(getApplicationContext(), UpdateStrings.class);
+        startService(updateService);
 
         //Facebook preload for application main feed!
         shimmerFrameLayout = findViewById(R.id.placeholderPost);
@@ -71,92 +79,68 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         menuItems.setLayoutManager(new LinearLayoutManager(MainActivity.this, LinearLayoutManager.HORIZONTAL, false));
         menuItemData = new ArrayList<>();
         //Loads Menu Items From The Web API
-        loadOfflineMenu();
+
 
         //Mainfeed recycler View Handler
         mainFeed = findViewById(R.id.mainFeed);
         mainFeed.setHasFixedSize(true);
         mainFeed.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
 
-        //Loading Offline Post from SQLITE database
-        loadOfflinePost();
+        loadOfflineMenu();
 
 
-        final Intent updateService = new Intent(getApplicationContext(), UpdateStrings.class);
-        startService(updateService);
+
+
+
 
 
         //Actionbar language Menu btn
-        Button menuLng = findViewById(R.id.languageMenu);
+      /*  Button menuLng = findViewById(R.id.languageMenu);
         menuLng.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 showMenu(v);
             }
-        });
+        });*/
 
-
-        new Thread(new Runnable() {
-            @Override
-            public void run() {
-                FileControl fc = new FileControl();
-                String FEEDAPI = "http://durgaplacements.com/Api/feed.php?key=madHash456@@&postCode=1";
-               List<String> test =new ArrayList<>();
-               test = ApiDataGrabber.getFeedFromFile(getApplicationContext(),FEEDAPI,"gu");
-                Log.d("MYFILE", "In to Thread File 1! " );
-                int size = test.size();
-                Log.d("MYFILE", "List Item Count Set: "+size);
-
-                String tmpTitle =MngData.getData(getApplicationContext(),"tmpString","title");
-                String tmpDetails=MngData.getData(getApplicationContext(),"tmpString","details");
-                try {
-                    Thread.sleep(500);
-                } catch (InterruptedException e) {
-                    e.printStackTrace();
-                }
-
-                if(tmpTitle.equals("1")){
-                    ApiDataGrabber.getFeedFromFile(getApplicationContext(),FEEDAPI,"gu");
-                    Log.d("FileControl", "INto Tmp Title!");
-                }else{
-                    String title = fc.getFileFromUrl(tmpTitle);
-                    Log.d("FileControl", "onCreate: Temp Title Success: " + tmpTitle + "\n"+title);
-
-                }
-
-
-
-                if(tmpDetails.equals("1")){
-                    ApiDataGrabber.getFeedFromFile(getApplicationContext(),FEEDAPI,"gu");
-                    Log.d("FileControl", "INto Tmp Details!");
-                }else{
-                    String details = fc.getFileFromUrl(tmpDetails);
-                    Log.d("FileControl", "onCreate: Temp Details Success: " + tmpDetails+"\n "+ details);
-
-
-                }
-
-                MngData.setData(getApplicationContext(),"tmpString","title","1");
-                MngData.setData(getApplicationContext(),"tmpString","details","1");
-
-
-/*                String data = fc.getFileFromUrl("http://durgaplacements.com/Data/2019/6/3/1/gu/details.txt");
-                Log.d("FileControl", "onCreate: data from web: " + data);*/
-            }
-        }).start();
+        //Requiest Gujarati file data and Store into db
+        /*String FEEDAPI = "http://durgaplacements.com/Api/feed.php?key=madHash456@@&postCode=1";
+        ApiDataGrabber.storeFeedOfline(getApplicationContext(), FEEDAPI, "gu");*/
 
 
     }
+
+    private void setOfflineData() {
+        ApiDataGrabber.storeFeedOfline(getApplicationContext(), ALLPOST_API, "gu");
+        ApiDataGrabber.storeMenuOffline(getApplicationContext(), MENU_API);
+    }
+
 
     private void checkPostConfig() {
         String postCode = MngData.getData(getApplicationContext(), "postCode", "code");
         String lng = MngData.getData(getApplicationContext(), "language", "lng");
         if (lng.equals("1")) {
-            MngData.setData(getApplicationContext(), "language", "lng", "en");
+            MngData.setData(getApplicationContext(), "language", "lng", "gu");
+        } else {
+            MngData.setData(getApplicationContext(), "language", "lng", "gu");
         }
-
         Log.d("HUMBINGO", "checkPostConfig: POSTCODE: " + postCode);
         Log.d("HUMBINGO", "checkPostConfig: LANGUAGE: " + lng);
+
+
+
+        SQLHelper sqlHelper = new SQLHelper(getApplicationContext());
+        for(String data: sqlHelper.getCellMenu(1)){
+            Log.d("MenuInfo", "checkPostConfig: Menu Title: "+data);
+
+        }
+        for(String data: sqlHelper.getCellMenu(2)){
+            Log.d("MenuInfo", "checkPostConfig: Menu Title: "+data);
+
+        }
+
+
+
 
     }
 
@@ -201,11 +185,11 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
                 startActivity(new Intent(getApplicationContext(), MainActivity.class));
                 return true;
             case R.id.eng:
-                MngData.setData(getApplicationContext(), "language", "lng", "en");
+                MngData.setData(getApplicationContext(), "language", "lng", "gu");
                 startActivity(new Intent(getApplicationContext(), MainActivity.class));
                 return true;
             case R.id.hin:
-                MngData.setData(getApplicationContext(), "language", "lng", "hi");
+                MngData.setData(getApplicationContext(), "language", "lng", "gu");
                 startActivity(new Intent(getApplicationContext(), MainActivity.class));
                 return true;
             default:
@@ -218,116 +202,42 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
     private void loadOfflinePost() {
         SQLHelper sh = new SQLHelper(getApplicationContext());
-        String lng = MngData.getDataDefault(getApplicationContext(), "language", "lng", "en");
-        Log.d("HUMBINGO", "loadOfflinePost: OFFLINE POST LANGUAGE: " + lng);
+        String lng = "gu";
         String postCode = MngData.getData(getApplicationContext(), "postCode", "code");
-        if (sh.countRecord("OFFLINE_POST") <= 0) {
-            loadOnlinePost();
-        } else {
+
+
+        if (sh.countRecord("OFFLINE_POST") > 0) {
             postData = new ArrayList<>();
             postData = sh.getOffPostList(postCode, lng);
             MainFeedAdapter feedAdapter = new MainFeedAdapter(postData, getApplicationContext());
             mainFeed.setAdapter(feedAdapter);
             shimmerFrameLayout.setVisibility(View.GONE);
             mainFeed.setVisibility(View.VISIBLE);
+        }else{
+            setOfflineData();
+            startActivity(new Intent(getApplicationContext(), MainActivity.class));
         }
+
     }
 
     private void loadOfflineMenu() {
         menuData = new ArrayList<>();
         SQLHelper sh = new SQLHelper(getApplicationContext());
-        String lng = MngData.getData(getApplicationContext(), "language", "lng");
-        if (sh.countRecord("OFFLINE_MENU") <= 0) {
-            loadOnlineMenu();
-        } else {
+        String lng = "gu";
+        if (sh.countRecord("OFFLINE_MENU") > 0) {
             menuData = sh.getOffMenuList(lng);
             MenuItemAdapter menuItemAdapter = new MenuItemAdapter(menuData, getApplicationContext());
             menuItems.setAdapter(menuItemAdapter);
+            //Loading Offline Post from SQLITE database
+            loadOfflinePost();
+
+        } else {
+            setOfflineData();
+            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+
         }
 
     }
-
-    private void loadOnlineMenu() {
-        final List<GetMenu> menuList = new ArrayList<>();
-        StringRequest stringRequest1 = new StringRequest(Request.Method.GET, MENU_API, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-
-                try {
-                    JSONObject jo = new JSONObject(response);
-                    JSONArray array = jo.getJSONArray("menuitems");
-                    for (int i = 0; i < array.length(); i++) {
-                        JSONObject o = array.getJSONObject(i);
-                        final GetMenu item = new GetMenu(
-                                o.getString("id"),
-                                o.getString("title"),
-                                o.getString("cat")
-                        );
-                        menuList.add(item);
-                    }
-
-                    menuData = menuList;
-                    MenuItemAdapter menuItemAdapter = new MenuItemAdapter(menuData, getApplicationContext());
-                    menuItems.setAdapter(menuItemAdapter);
-
-
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        });
-        WebServiceProvider.getInstace(getApplicationContext()).addToRequestQueue(stringRequest1);
-    }
-
-    private void loadOnlinePost() {
-        final List<GetPostFromLocal> postList = new ArrayList<>();
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, POST_API, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                try {
-
-                    JSONObject jo = new JSONObject(response);
-                    JSONArray array = jo.getJSONArray("mainfeed");
-                    for (int i = 0; i < array.length(); i++) {
-                        JSONObject o = array.getJSONObject(i);
-                        final GetPostFromLocal item = new GetPostFromLocal(
-                                o.getString("id"),
-                                o.getString("title"),
-                                o.getString("imgUrl"),
-                                o.getString("details"),
-                                o.getString("date"),
-                                o.getString("views"),
-                                o.getString("postcode"),
-                                "en"
-                        );
-                        postList.add(item);
-                    }
-                    List<GetPostFromLocal> olPost = postList;
-                    MainFeedAdapter feedAdapter = new MainFeedAdapter(olPost, getApplicationContext());
-                    mainFeed.setAdapter(feedAdapter);
-                    shimmerFrameLayout.setVisibility(View.GONE);
-                    mainFeed.setVisibility(View.VISIBLE);
-
-
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        });
-        WebServiceProvider.getInstace(getApplicationContext()).addToRequestQueue(stringRequest);
-
-    }
-
 
 //Class End
 }

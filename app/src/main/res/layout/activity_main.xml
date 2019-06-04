@@ -7,6 +7,7 @@
     android:background="@color/White"
     tools:context=".MainActivity">
 
+
     <include
         android:id="@+id/topActionBar"
         layout="@layout/top_actionbar" />
@@ -17,10 +18,18 @@
         android:layout_height="match_parent"
         android:layout_below="@+id/topActionBar">
 
+        <ProgressBar
+            android:id="@+id/progressBar1"
+            style="?android:attr/progressBarStyleLarge"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_centerHorizontal="true"
+            android:layout_centerVertical="true" />
+
         <com.facebook.shimmer.ShimmerFrameLayout
+            android:id="@+id/placeholderPost"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:id="@+id/placeholderPost">
+            android:layout_height="match_parent">
 
             <LinearLayout
                 android:layout_width="match_parent"

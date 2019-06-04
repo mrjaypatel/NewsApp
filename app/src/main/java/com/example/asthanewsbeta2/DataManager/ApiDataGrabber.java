@@ -13,15 +13,13 @@ import com.example.asthanewsbeta2.Modules.GetPost;
 import com.example.asthanewsbeta2.Modules.MngData;
 import com.example.asthanewsbeta2.Modules.MyGlobal;
 import com.example.asthanewsbeta2.OfflineDataManager.SQLHelper;
-import com.example.asthanewsbeta2.Services.GoogleTranslate;
 import com.example.asthanewsbeta2.Services.WebServiceProvider;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.FileFilter;
-import java.io.IOException;
+import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,152 +27,6 @@ public class ApiDataGrabber {
     private static String TAG = "apiGrabber";
 
 
-    public static void storePostLocal(final Context context, final String POST_API, final String post_lng) {
-        final SQLHelper sqlHelper = new SQLHelper(context);
-        StringRequest stringRequest = new StringRequest(Request.Method.GET, POST_API, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-
-                try {
-                    JSONObject jo = new JSONObject(response);
-                    JSONArray array = jo.getJSONArray("mainfeed");
-                    for (int i = 0; i < array.length(); i++) {
-                        JSONObject o = array.getJSONObject(i);
-                        final GetPost item;
-                        item = new GetPost(
-                                o.getString("id"),
-                                o.getString("title"),
-                                o.getString("imgUrl"),
-                                o.getString("details"),
-                                o.getString("date"),
-                                o.getString("views"),
-                                o.getString("postcode")
-                        );
-
-
-                        if (post_lng.equals("en")) {
-                            if (sqlHelper.findPost(item.getId(), post_lng)) {
-                                Log.d(TAG, "onResponse: Insert Skip Cause of duplication! " + item.getId());
-                                continue;
-                            } else {
-                                Log.d(TAG, "onResponse: Data Inserted! " + item.getId());
-                                String id = item.getId();
-                                String title = item.getTitle();
-                                String details = item.getDetails();
-                                String imgUrl = item.getImgUrl();
-                                String date = item.getDate();
-                                String views = item.getViews();
-                                String postCode = item.getPostCode();
-                                sqlHelper.addOfflinePost(Integer.parseInt(id),
-                                        title,
-                                        imgUrl,
-                                        details,
-                                        date,
-                                        views,
-                                        postCode,
-                                        post_lng);
-                            }
-                        } else {
-                            if (sqlHelper.findPost(item.getId(), post_lng)) {
-                                Log.d(TAG, "onResponse: Insert Skip Cause of duplication! " + item.getId());
-                                continue;
-                            } else {
-
-                                new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-                                        //final String tmp_title = GoogleTranslate.translate(post_lng, item.getTitle());
-                                        final String tmp_title = MngData.mngString(context, item.getTitle());
-                                        Log.d(TAG, "run: MY_TITLE: " + tmp_title);
-                                        //final String tmp_details = GoogleTranslate.translate(post_lng, item.getDetails());
-                                        final String tmp_details = MngData.mngString(context, item.getDetails());
-                                        Log.d(TAG, "run: MY_DETAILS: " + tmp_details);
-                                        sqlHelper.addOfflinePost(Integer.parseInt(
-                                                item.getId()),
-                                                tmp_title,
-                                                item.getImgUrl(),
-                                                tmp_details,
-                                                item.getDate(),
-                                                item.getViews(),
-                                                item.getPostCode(),
-                                                post_lng);
-
-                                    }
-                                }).start();
-
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    e.printStackTrace();
-                }
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        });
-        WebServiceProvider.getInstace(context).addToRequestQueue(stringRequest);
-    }
-
-
-    public static void storeMenuLocal(final Context context, final String MENU_API, final String MENU_LNG) {
-
-        final SQLHelper sqlHelper = new SQLHelper(context);
-        StringRequest stringRequest1 = new StringRequest(Request.Method.GET, MENU_API, new Response.Listener<String>() {
-            @Override
-            public void onResponse(String response) {
-                try {
-                    JSONObject jo = new JSONObject(response);
-                    JSONArray array = jo.getJSONArray("menuitems");
-                    for (int i = 0; i < array.length(); i++) {
-                        JSONObject o = array.getJSONObject(i);
-                        final GetMenu item = new GetMenu(
-                                o.getString("id"),
-                                o.getString("title"),
-                                o.getString("cat")
-                        );
-
-
-                        if (sqlHelper.findMenu(item.getId(), MENU_LNG)) {
-                            Log.d(TAG, "onResponse: DATA ENTRY Skip Cause of duplication!");
-                            continue;
-                        } else {
-                            try {
-                                new Thread(new Runnable() {
-                                    @Override
-                                    public void run() {
-
-                                        final String tmp_title;
-                                        try {
-                                            tmp_title = GoogleTranslate.translate(MENU_LNG, item.getTitle());
-                                            sqlHelper.addOfflineMenu(Integer.parseInt(item.getId()), tmp_title, item.getCat(), MENU_LNG);
-                                        } catch (IOException e) {
-                                            e.printStackTrace();
-                                        }
-
-
-                                    }
-                                }).start();
-
-                            } catch (SQLException e) {
-                                Log.d(TAG, "onResponse: Something goes Wrong! " + e);
-                            }
-                        }
-                    }
-                } catch (JSONException e) {
-                    e.printStackTrace();
-                }
-            }
-        }, new Response.ErrorListener() {
-            @Override
-            public void onErrorResponse(VolleyError error) {
-
-            }
-        });
-        WebServiceProvider.getInstace(context).addToRequestQueue(stringRequest1);
-    }
 
 
     public static String checkDataChange(final Context context, final String Table) {
@@ -198,8 +50,13 @@ public class ApiDataGrabber {
                             mg.setCheckMenuCount(data);
                             Log.d("checkMe", "Menu Count: " + data);
                             break;
+                        case "feed":
+                            mg.setCheckFeedCount(data);
+                            Log.d("checkMe", "Feed Post Count: " + data);
+                            break;
                         default:
                             mg.setCheckPostCount("1");
+                            mg.setCheckFeedCount("1");
                             mg.setCheckMenuCount("1");
                             Log.d("checkMe", "Post Count: No Table Found");
                             Log.d("checkMe", "Menu Count: No Table Found");
@@ -229,25 +86,20 @@ public class ApiDataGrabber {
                 return mg.getCheckPostCount();
             case "menuitems":
                 return mg.getCheckMenuCount();
+            case "feed":
+                return mg.getCheckFeedCount();
             default:
                 return "No Table Found!";
-
-
         }
 
     }
 
-
     //Get online file data
-    public static void getFeedFromFile(final Context context, final String FEED_API, final String post_lng) {
-        final List<String> data = new ArrayList<>();
-        final MyGlobal mg = new MyGlobal();
+    public static void storeFeedOfline(final Context context, final String FEED_API, final String post_lng) {
         StringRequest checkDataChange = new StringRequest(Request.Method.GET, FEED_API, new Response.Listener<String>() {
             @Override
             public void onResponse(String response) {
                 try {
-                    String title_url = "ram";
-                    String details_url = "ram";
                     JSONObject jo = new JSONObject(response);
                     JSONArray array = jo.getJSONArray("feed");
                     for (int i = 0; i < array.length(); i++) {
@@ -255,32 +107,44 @@ public class ApiDataGrabber {
                         final GetFeed item;
                         item = new GetFeed(
                                 o.getString("id"),
-                                o.getString("title_en"),
                                 o.getString("title_gu"),
-                                o.getString("title_hi"),
-                                o.getString("details_en"),
                                 o.getString("details_gu"),
-                                o.getString("details_hi"),
-                                o.getString("imgUrl"),
                                 o.getString("date_time"),
+                                o.getString("imgUrl"),
                                 o.getString("views"),
                                 o.getString("postcode")
-
                         );
 
-                        title_url = o.getString("title_gu");
-                        details_url = o.getString("details_gu");
-                        data.add(0, title_url);
-                        data.add(1, details_url);
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                FileControl fc = new FileControl();
+                                String title = fc.getFileFromUrl(item.getTitle_gu());
+                                String details = fc.getFileFromUrl(item.getDetails_gu());
+
+                                SQLHelper sqlHelper = new SQLHelper(context);
+                                if (!sqlHelper.findPost(item.getId(), "gu")) {
+                                    Log.d(TAG, "onResponse: Data Inserted! " + item.getId());
+                                    String id = item.getId();
+                                    String imgUrl = item.getImgUrl();
+                                    String date = item.getDate_time();
+                                    String views = item.getViews();
+                                    String postCode = item.getPostcode();
+
+                                    sqlHelper.addOfflinePost(Integer.parseInt(id),
+                                            title,
+                                            imgUrl,
+                                            details,
+                                            date,
+                                            views,
+                                            postCode,
+                                            "gu");
+                                } else {
+                                    Log.d(TAG, "run:Apigrabber Post Entry Skiped");
+                                }
+                            }
+                        }).start();
                     }
-
-                    MngData.setData(context, "tmpString", "title", data.get(0));
-                    MngData.setData(context, "tmpString", "details", data.get(1));
-
-                    Log.d("MYFILE", "onResponse: MYGUJ TITLE_URL: " + title_url);
-                    Log.d("MYFILE", "onResponse: MYGUJ DETAILS_URL: " + details_url);
-                    Log.d("MYFILE", "onResponse: MYGUJ TITLE: " + data.get(0));
-                    Log.d("MYFILE", "onResponse: MYGUJ DETAILS: " + data.get(1));
                 } catch (JSONException e) {
                     e.printStackTrace();
                     Log.d("MYFILE", "onResponse: Post/Menu Count Exception!: " + e);
@@ -295,6 +159,62 @@ public class ApiDataGrabber {
         });
 
         WebServiceProvider.getInstace(context).addToRequestQueue(checkDataChange);
+
+    }
+
+
+    //Get online file data
+    public static void storeMenuOffline(final Context context, final String MENU_API) {
+        StringRequest menuGetRequest = new StringRequest(Request.Method.GET, MENU_API, new Response.Listener<String>() {
+            @Override
+            public void onResponse(String response) {
+                try {
+                    JSONObject jo = new JSONObject(response);
+                    JSONArray array = jo.getJSONArray("menuitems");
+                    for (int i = 0; i < array.length(); i++) {
+                        JSONObject o = array.getJSONObject(i);
+                        final GetMenu item;
+                        item = new GetMenu(
+                                o.getString("id"),
+                                o.getString("title"),
+                                o.getString("cat")
+                        );
+
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                FileControl fc = new FileControl();
+                                String title = fc.getFileFromUrl(item.getTitle());
+                                Log.d(TAG, "run: Converted Menu Title: " + title);
+                                SQLHelper sqlHelper = new SQLHelper(context);
+                                if (!sqlHelper.findMenu(item.getId())) {
+                                    Log.d(TAG, "onResponse: Data Inserted! " + item.getId());
+                                    String id = item.getId();
+
+                                    sqlHelper.addOfflineMenu(Integer.parseInt(id),
+                                            title,
+                                            item.getCat(),
+                                            "gu");
+                                } else {
+                                    Log.d(TAG, "run:Apigrabber Menu Entry Skiped");
+                                }
+                            }
+                        }).start();
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    Log.d("MYFILE", "onResponse: Post/Menu Count Exception!: " + e);
+
+                }
+            }
+        }, new Response.ErrorListener() {
+            @Override
+            public void onErrorResponse(VolleyError error) {
+                Log.d("MYFILE", "onResponse: Post/Menu Count Exception!: " + error);
+            }
+        });
+
+        WebServiceProvider.getInstace(context).addToRequestQueue(menuGetRequest);
 
     }
 
