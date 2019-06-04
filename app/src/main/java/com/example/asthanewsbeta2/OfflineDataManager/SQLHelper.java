@@ -7,10 +7,12 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
+import com.example.asthanewsbeta2.MainActivity;
 import com.example.asthanewsbeta2.Modules.GetMenu;
 import com.example.asthanewsbeta2.Modules.GetPostFromLocal;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public class SQLHelper extends SQLiteOpenHelper {
@@ -240,7 +242,7 @@ public class SQLHelper extends SQLiteOpenHelper {
         String sql = "SELECT  * FROM " + OFFLINE_MENU + " WHERE " + MENU_ID + " = " + menuId + " AND " + MENU_LNG + " = \"gu\"";
         SQLiteDatabase db = this.getWritableDatabase();
         int recordCount = db.rawQuery(sql, null).getCount();
-        Log.d("apiGrabber", "SQLHELPER findMenu: menu count in slite: "+ recordCount);
+        Log.d("apiGrabber", "SQLHELPER findMenu: menu count in slite: " + recordCount);
         if (recordCount > 0) {
             return true;
         } else {
@@ -355,7 +357,7 @@ public class SQLHelper extends SQLiteOpenHelper {
         String selectQuery = "SELECT  * FROM " + OFFLINE_MENU;
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
-        String data = "";
+        String data;
         if (cursor.moveToFirst()) {
             do {
                 data = cursor.getString(index);
@@ -367,16 +369,12 @@ public class SQLHelper extends SQLiteOpenHelper {
     }
 
     //For getting all record by col_index
-    /*public void removeDuplicate(int id,String TABLENAME) {
-
-        String selectQuery = "INSERT INTO "+TABLENAME+" (ip, hits)"+" VALUES ('127.0.0.1', 1)"+
-        " ON CONFLICT(ip) DO UPDATE SET "+ hits +" =" +;
-
-
-
+    public List<String> getCellPost(int index) {
+        List<String> MenuData = new ArrayList<>();
+        String selectQuery = "SELECT  * FROM " + OFFLINE_POST;
         SQLiteDatabase db = this.getReadableDatabase();
         Cursor cursor = db.rawQuery(selectQuery, null);
-        String data = "";
+        String data;
         if (cursor.moveToFirst()) {
             do {
                 data = cursor.getString(index);
@@ -385,5 +383,66 @@ public class SQLHelper extends SQLiteOpenHelper {
         }
         cursor.close();
         return MenuData;
-    }*/
+    }
+
+
+
+
+    public void simplifyMenu() {
+        try {
+            for (String data : getCellMenu(1)) {
+                removeExsisting(MENU_INDEX_ID, Integer.parseInt(data), MENU_ID, OFFLINE_MENU);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "simplifyMenu: Something Goes wrong For simplify data!", e);
+        }
+    }
+
+    public void simplifyPost() {
+        try {
+            for (String data : getCellPost(1)) {
+                removeExsisting(POST_INDEX_ID, Integer.parseInt(data), POST_ID, OFFLINE_POST);
+            }
+        } catch (Exception e) {
+            Log.e(TAG, "simplifyMenu: Something Goes wrong For simplify data!", e);
+        }
+    }
+
+
+
+
+    //For getting all record by col_index
+    public void removeExsisting(String INDEX_ID, int id, String COL, String TABLE) {
+        String selectQuery = "SELECT  * FROM " + TABLE + " WHERE " + COL + " = \"" + id + "\" ";
+        SQLiteDatabase db = this.getReadableDatabase();
+        Cursor cursor = db.rawQuery(selectQuery, null);
+        int recordCount = db.rawQuery(selectQuery, null).getCount();
+
+        while (recordCount > 1) {
+
+            List<Integer> index = new ArrayList<>();
+            if (cursor.moveToFirst()) {
+                do {
+                    index.add(Integer.parseInt(cursor.getString(0)));
+                } while (cursor.moveToNext());
+            }
+            cursor.close();
+            int index_id = Collections.max(index, null);
+            if (deleteMe(TABLE, INDEX_ID, index_id)) {
+                Log.d(TAG, "removeExsisting : Duplicate Removed!");
+            } else {
+                Log.d(TAG, "removeExsisting : No Duplicate Found!");
+            }
+        }
+
+
+    }
+
+
+    public boolean deleteMe(String TABLE, String COL, int VALUE) {
+        SQLiteDatabase db = this.getWritableDatabase();
+        return db.delete(TABLE, COL + "=" + VALUE, null) > 0;
+    }
+
+
 }

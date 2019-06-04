@@ -13,6 +13,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.widget.Button;
 import android.widget.ProgressBar;
+import android.widget.Toast;
 
 import com.android.volley.Request;
 import com.android.volley.Response;
@@ -38,7 +39,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuItemClickListener {
-    private RecyclerView menuItems;
+    public RecyclerView menuItems;
     private List<GetMenu> menuItemData;
     private List<GetPostFromLocal> postData;
     private List<GetMenu> menuData;
@@ -51,12 +52,11 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
     public static String ALLPOST_API = "http://durgaplacements.com/Api/allPost.php?key=madHash456@@";
 
     private ProgressBar spinner;
-
+    private MainFeedAdapter feedAdapter;
+    private MenuItemAdapter menuItemAdapter;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-
 
         setContentView(R.layout.activity_main);
         SQLHelper sqlHelper = new SQLHelper(getApplicationContext());
@@ -87,32 +87,16 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         mainFeed.setLayoutManager(new LinearLayoutManager(getApplicationContext()));
 
         loadOfflineMenu();
-
-
-
-
-
-
-
-        //Actionbar language Menu btn
-      /*  Button menuLng = findViewById(R.id.languageMenu);
-        menuLng.setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                showMenu(v);
-            }
-        });*/
-
-        //Requiest Gujarati file data and Store into db
-        /*String FEEDAPI = "http://durgaplacements.com/Api/feed.php?key=madHash456@@&postCode=1";
-        ApiDataGrabber.storeFeedOfline(getApplicationContext(), FEEDAPI, "gu");*/
-
+        sqlHelper.simplifyMenu();
+        sqlHelper.simplifyPost();
 
     }
 
     private void setOfflineData() {
         ApiDataGrabber.storeFeedOfline(getApplicationContext(), ALLPOST_API, "gu");
         ApiDataGrabber.storeMenuOffline(getApplicationContext(), MENU_API);
+        startActivity(new Intent(new Intent(getApplicationContext(),MainActivity.class)));
+
     }
 
 
@@ -126,8 +110,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         }
         Log.d("HUMBINGO", "checkPostConfig: POSTCODE: " + postCode);
         Log.d("HUMBINGO", "checkPostConfig: LANGUAGE: " + lng);
-
-
 
         SQLHelper sqlHelper = new SQLHelper(getApplicationContext());
         for(String data: sqlHelper.getCellMenu(1)){
@@ -144,7 +126,6 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
 
     }
 
-
     @Override
     protected void onResume() {
         super.onResume();
@@ -156,6 +137,7 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         super.onPause();
         shimmerFrameLayout.stopShimmer();
     }
+
 
 
     /**
@@ -209,13 +191,13 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         if (sh.countRecord("OFFLINE_POST") > 0) {
             postData = new ArrayList<>();
             postData = sh.getOffPostList(postCode, lng);
-            MainFeedAdapter feedAdapter = new MainFeedAdapter(postData, getApplicationContext());
+             feedAdapter = new MainFeedAdapter(postData, getApplicationContext());
             mainFeed.setAdapter(feedAdapter);
             shimmerFrameLayout.setVisibility(View.GONE);
             mainFeed.setVisibility(View.VISIBLE);
         }else{
             setOfflineData();
-            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+
         }
 
     }
@@ -226,17 +208,27 @@ public class MainActivity extends AppCompatActivity implements PopupMenu.OnMenuI
         String lng = "gu";
         if (sh.countRecord("OFFLINE_MENU") > 0) {
             menuData = sh.getOffMenuList(lng);
-            MenuItemAdapter menuItemAdapter = new MenuItemAdapter(menuData, getApplicationContext());
+             menuItemAdapter = new MenuItemAdapter(menuData, getApplicationContext());
             menuItems.setAdapter(menuItemAdapter);
             //Loading Offline Post from SQLITE database
             loadOfflinePost();
 
         } else {
             setOfflineData();
-            startActivity(new Intent(getApplicationContext(), MainActivity.class));
+
 
         }
 
+    }
+
+    private static long back_pressed;
+
+    @Override
+    public void onBackPressed()
+    {
+        if (back_pressed + 1000 > System.currentTimeMillis()) super.onBackPressed();
+        else Toast.makeText(getBaseContext(), "Press once again to exit!", Toast.LENGTH_SHORT).show();
+        back_pressed = System.currentTimeMillis();
     }
 
 //Class End
